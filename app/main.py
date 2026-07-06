@@ -3,13 +3,13 @@ from app.config import Settings
 
 app=FastAPI(
     title="AI Chat API",
-    description="Production grade backend platform with gemini ai",
+    description="Production grade backend platform with LLM",
     version="1.0.0"
 )
 
 #registe the router files here
 
-from app.routers import auth,conversation_router,chat,health
+from app.routers import auth,conversation_router,chat
 
 #auth/endpoints
 app.include_router(auth.router)
@@ -17,7 +17,7 @@ app.include_router(auth.router)
 app.include_router(conversation_router.router)
 #chat/endpoints
 app.include_router(chat.router)
-app.include_router(health.router)
+
 
 #---------------------------------------#
 
@@ -31,13 +31,16 @@ async def root():
         "redoc":"/redoc" #alternative api docs
     }
 
+@app.get("/health")
+async def health_check():
+    return {"status": "ok"}
+
 @app.on_event("startup")
 async def startup_event():
     print("🚀 API Starting...")
     print("✅ Auth endpoints ready: POST /auth/register, POST /auth/login, GET /auth/me")
     print("✅ Conversation endpoints ready: POST/GET/PUT/DELETE /conversations")
     print("✅ Chat endpoints ready: POST /chat, GET /chat/stream")
-    print("✅ Health check ready: GET /health")
 
 @app.on_event("shutdown")
 async def shutdown_event():
