@@ -22,7 +22,7 @@ async def login(credentials:UserLogin, db:AsyncSession=Depends(get_db)):
     return{"access_token":token,"token_type":"bearer"}
 
 @router.get("/me",response_model=UserResponse)
-async def get_me(current_user:app.schemas.user.UserResponse=Depends(auth_services.get_current_user)):
+async def get_me(current_user:UserResponse=Depends(auth_services.get_current_user)):
     #from redis_service import get_cache
     #cache the user id until logs in even if page refreshed so not needed from db
     cache_key=f"user:{current_user.id}"

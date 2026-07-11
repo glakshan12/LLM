@@ -5,3 +5,4 @@ __pycache__/
 Dockerfile
 .dockerignore
 .env.docker
+docker-compose.yml

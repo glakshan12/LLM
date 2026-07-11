@@ -8,24 +8,29 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from sqlalchemy import select
 from app.database import get_db
-from app import models, routers
+from app import models
 from fastapi import Depends, HTTPException, status
 from app.models.users import User
 from app.schemas.user import UserRegister, UserLogin, TokenResponses
 from fastapi.security import HTTPBearer
-import app.schemas
+from app.schemas import user
 from uuid import UUID
-password_hashing = CryptContext(schemes=["bcrypt"], deprecated="auto")
+password_hashing = CryptContext(schemes=["bcrypt"], deprecated="auto")#for verify the old password
 oauth=OAuth2PasswordBearer(tokenUrl="/auth/login")#take the token from header and send to function
+
+#verify register user
 def hash_password(plain_password:str)->str:
-    return password_hashing.hash(plain_password)
+    return password_hashing.hash(plain_password) # method #mock hash
+
 def verify_password(plain_password:str,hash_password:str)->bool:
     return password_hashing.verify(plain_password,hash_password)
+
 def create_access_token(data:dict)->str:
     to_encode=data.copy()#to modify not original data
     expire=datetime.now(timezone.utc)+timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp":expire})
     return jwt.encode(to_encode,settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+
 def decode_token(token:str)->str:
     try:
         payload=jwt.decode(token,settings.SECRET_KEY,algorithms=[settings.ALGORITHM])
@@ -39,6 +44,8 @@ def decode_token(token:str)->str:
             detail="Invalid Token",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+
 async def get_current_user(
         token:str=Depends(oauth),
         db:AsyncSession=Depends(get_db)
@@ -53,8 +60,9 @@ async def get_current_user(
         )
     return user
 
-async def register_user(user_data:UserRegister,db:AsyncSession):
-    result = await db.execute(select(User).where(User.email==user_data.email))
+
+async def register_user(user_data:UserRegister,db:AsyncSession):#depends written in router file
+    result = await db.execute(select(User).where(User.email==user_data.email))#check in db
     existing_user = result.scalar_one_or_none()
     if existing_user:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="Email already registerd")
@@ -73,7 +81,8 @@ async def register_user(user_data:UserRegister,db:AsyncSession):
     await db.refresh(new_user)
     return new_user
 
-async def login_user(db:AsyncSession, email:str,password:str)->app.schemas.User:
+
+async def login_user(db:AsyncSession, email:str,password:str)->user:
     result=await db.execute(select(User).where(User.email==email))
     user=result.scalar_one_or_none()
     if not user or not verify_password(password,user.password):#call verify password for verify password
@@ -83,6 +92,7 @@ async def login_user(db:AsyncSession, email:str,password:str)->app.schemas.User:
     if not user.is_active:
         raise HTTPException(status_code=403,detail="Account is deactivated")
     return user
+
 
 async def delete_account(db:AsyncSession, user_id:UUID):
     result=await db.execute(select(User).where(User.id==user_id))
