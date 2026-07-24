@@ -62,19 +62,31 @@ async def get_current_user(
 
 
 async def register_user(user_data:UserRegister,db:AsyncSession):#depends written in router file
+
+    if user_data.username is None:
+        raise HTTPException(status_code=400, detail="Username cannot be empty")
+
+    if user_data.password is None:
+        raise HTTPException(status_code=400,detail="Password cannot be empty")
+    
+    #email check
     result = await db.execute(select(User).where(User.email==user_data.email))#check in db
     existing_user = result.scalar_one_or_none()
     if existing_user:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="Email already registerd")
+    
+    #username check
     result = await db.execute(select(User).where(User.username==user_data.username))
     existing_username = result.scalar_one_or_none()
     if existing_username:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="username already existed")
+    
     new_user=User(
         email=user_data.email,#->models
         username=user_data.username,
         password=hash_password(user_data.password)#hashpassword function is called here for password hashing
     )
+    
     db.add(new_user)
     await db.flush()
     await db.commit()

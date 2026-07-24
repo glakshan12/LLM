@@ -3,9 +3,9 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID
 class UserRegister(BaseModel):
-    username:str
+    username:str=Field(min_length=1)
     email:EmailStr
-    password:str=Field(max_length=71)
+    password:str=Field(min_length=1,max_length=71)
 class UserLogin(BaseModel):
     email:EmailStr
     password:str
